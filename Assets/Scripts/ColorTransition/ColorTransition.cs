@@ -4,7 +4,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace CustomPostProcessing
 {
-    [Serializable, VolumeComponentMenu("Custom/ColorTransition")]
+    [Serializable, VolumeComponentMenu("Custom/Color Transition")]
     public class ColorTransition : VolumeComponent, IPostProcessComponent
     {
         public ClampedFloatParameter intensity = new ClampedFloatParameter(value: 0f, min: 0, max: 1, overrideState: true);

@@ -17,6 +17,7 @@ MonoBehaviour:
     type: 3}
   colorTransitionShader: {fileID: 4800000, guid: f90a4be97e8b4ec39a19d32173d0c24c,
     type: 3}
+  monochromeShader: {fileID: 4800000, guid: ecac3ac7853d20e498c7e1f7e4f79a04, type: 3}
 --- !u!114 &-1878332245247344467
 MonoBehaviour:
   m_ObjectHideFlags: 0
