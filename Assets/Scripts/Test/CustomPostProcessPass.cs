@@ -21,7 +21,8 @@ public class CustomPostProcessPass : ScriptableRenderPass
 
     public CustomPostProcessPass(Shader shader)
     {
-        effectMaterial = new Material(shader);
+        effectMaterial = CoreUtils.CreateEngineMaterial(shader);
+
         // Set the render pass event
         renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
     }
@@ -49,6 +50,14 @@ public class CustomPostProcessPass : ScriptableRenderPass
         if (renderingData.cameraData.isSceneViewCamera)
             return;
 
+        // カスタムエフェクトを取得
+        VolumeStack stack = VolumeManager.instance.stack;
+        var customEffect = stack.GetComponent<CustomEffectComponent>();
+
+        // 無効だったらポストプロセスかけない
+        if (!customEffect.IsActive())
+            return;
+
         // CommandBufferを取得
         CommandBuffer cmd = CommandBufferPool.Get("Custom Post Processing");
         cmd.Clear();
@@ -56,23 +65,15 @@ public class CustomPostProcessPass : ScriptableRenderPass
         // カメラを描画元として設定
         latestDest = source;
 
-        // カスタムエフェクトを取得
-        VolumeStack stack = VolumeManager.instance.stack;
-        var customEffect = stack.GetComponent<CustomEffectComponent>();
+        effectMaterial.SetFloat(intensityId, customEffect.intensity.value);
+        effectMaterial.SetColor(overlayColorId, customEffect.overlayColor.value);
 
-        // 有効だったらポストプロセスかける
-        if (customEffect.IsActive())
-        {
-            effectMaterial.SetFloat(intensityId, customEffect.intensity.value);
-            effectMaterial.SetColor(overlayColorId, customEffect.overlayColor.value);
+        RenderTargetIdentifier first = latestDest;
+        RenderTargetIdentifier last = first == destinationA ? destinationB : destinationA;
+        Blit(cmd, first, last, effectMaterial, 0);
 
-            RenderTargetIdentifier first = latestDest;
-            RenderTargetIdentifier last = first == destinationA ? destinationB : destinationA;
-            Blit(cmd, first, last, effectMaterial, 0);
-
-            // Swap
-            latestDest = last;
-        }
+        // Swap
+        latestDest = last;
 
         // カメラに描画結果を反映
         Blit(cmd, latestDest, source);

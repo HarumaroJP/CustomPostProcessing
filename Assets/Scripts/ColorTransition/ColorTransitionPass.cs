@@ -18,12 +18,15 @@ namespace CustomPostProcessing
         private readonly int temporaryRTIdA = Shader.PropertyToID("_TempRT");
         private readonly int temporaryRTIdB = Shader.PropertyToID("_TempRTB");
         private readonly int intensityId = Shader.PropertyToID("_Intensity");
-        private readonly int overlayColorId = Shader.PropertyToID("_OverlayColor");
+        private readonly int speedId = Shader.PropertyToID("_Speed");
+        private readonly int saturationId = Shader.PropertyToID("_Saturation");
+        private readonly int brightnessId = Shader.PropertyToID("_Brightness");
         private Material effectMaterial;
 
         public ColorTransitionPass(Shader shader)
         {
-            effectMaterial = new Material(shader);
+            effectMaterial = CoreUtils.CreateEngineMaterial(shader);
+
             // Set the render pass event
             renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
         }
@@ -51,6 +54,14 @@ namespace CustomPostProcessing
             if (renderingData.cameraData.isSceneViewCamera)
                 return;
 
+            // カスタムエフェクトを取得
+            VolumeStack stack = VolumeManager.instance.stack;
+            var customEffect = stack.GetComponent<ColorTransition>();
+
+            // 無効だったらポストプロセスかけない
+            if (!customEffect.IsActive())
+                return;
+
             // CommandBufferを取得
             CommandBuffer cmd = CommandBufferPool.Get("ColorTransition");
             cmd.Clear();
@@ -58,23 +69,17 @@ namespace CustomPostProcessing
             // カメラを描画元として設定
             latestDest = source;
 
-            // カスタムエフェクトを取得
-            VolumeStack stack = VolumeManager.instance.stack;
-            var customEffect = stack.GetComponent<ColorTransitionComponent>();
-            
-            // 有効だったらポストプロセスかける
-            if (customEffect.IsActive())
-            {
-                effectMaterial.SetFloat(intensityId, customEffect.intensity.value);
-                effectMaterial.SetColor(overlayColorId, Random.ColorHSV());
+            effectMaterial.SetFloat(intensityId, customEffect.intensity.value);
+            effectMaterial.SetFloat(saturationId, customEffect.saturation.value);
+            effectMaterial.SetFloat(brightnessId, customEffect.brightness.value);
+            effectMaterial.SetFloat(speedId, customEffect.speed.value);
 
-                RenderTargetIdentifier first = latestDest;
-                RenderTargetIdentifier last = first == destinationA ? destinationB : destinationA;
-                Blit(cmd, first, last, effectMaterial, 0);
+            RenderTargetIdentifier first = latestDest;
+            RenderTargetIdentifier last = first == destinationA ? destinationB : destinationA;
+            Blit(cmd, first, last, effectMaterial, 0);
 
-                // Swap
-                latestDest = last;
-            }
+            // Swap
+            latestDest = last;
 
             // カメラに描画結果を反映
             Blit(cmd, latestDest, source);
